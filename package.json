@@ -1,0 +1,25 @@
+{
+  "name": "pimatic-volkszaehler",
+  "description": "Volkszaehler plugin",
+  "version": "0.0.1",
+  "author": "Andreas Goetz <cpuidle@gmx.de>",
+  "homepage": "http://github.com/andig/pimatic-volkszaehler",
+  "main": "volkszaehler.coffee",
+  "configSchema": "volkszaehler-config-schema.coffee",
+  "files": [
+    "volkszaehler.coffee",
+    "README.md",
+    "device-config-schema.coffee",
+    "volkszaehler-config-schema.coffee"
+  ],
+  "dependencies": {
+  	"request-promise": "0.2.*"
+  },
+  "peerDependencies": {
+    "pimatic": ">0.8.17"
+  },
+  "engines": {
+    "node": ">0.8.x",
+    "npm": ">1.1.x"
+  }
+}
