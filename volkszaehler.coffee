@@ -8,12 +8,38 @@ module.exports = (env) ->
   # Require the [cassert library](https://github.com/rhoot/cassert).
   assert = env.require 'cassert'
 
+  # Require the decl-api library
+  t = env.require('decl-api').types
+
   # Require request
   request = require 'request-promise'
+
+  # ###fail-safe request function with built-in retries
+  requestWithRetry = (options, maxRetries, retryDelay, retry) ->
+    # default
+    maxRetries || (maxRetries = 3)
+    retryDelay || (retryDelay = 1000)
+    retry || (retry = 0)
+
+    # httpGet returns a promise
+    return (request options)
+      .error (error) ->
+        # fail after maxRetries
+        if (++retry > maxRetries)
+          env.logger.warn "Failed " + options.uri + " - giving up"
+          throw error
+
+        # wait some time and try again
+        return (Promise.delay retryDelay)
+          .then ->
+            env.logger.warn "Retrying " + options.uri
+            return requestWithRetry options, maxRetries, retryDelay, retry
+
 
   # ###VolkszaehlerPlugin class
   class VolkszaehlerPlugin extends env.plugins.Plugin
 
+    # dictinary of device ids for uuid->device translation
     devices: {}
 
     # ####init()
@@ -29,17 +55,24 @@ module.exports = (env) ->
       # get volkszaehler capability definition
       assert @config.middleware?
 
-      #!! why the heck are brackets needed?
-      #!! why is  .catch env.logger.error  not possible?
-      @_capabilities = request({ uri: @config.middleware + '/capabilities.json', simple: true, transform: JSON.parse })
+      # when assigning promises to variables make sure Promises are returned
+      # when handling errors don't return rejected promises or the error will bubble up resulting in "unhandled errors"
+
+      @_capabilities = requestWithRetry({ uri: @config.middleware + '/capabilities.json', json: true })
         .then (json) ->
-          definitions = json?.capabilities?.definitions
-          assert definitions?
-          return Promise.resolve definitions
+          assert json?.capabilities?.definitions
+          return json?.capabilities?.definitions
         .error (error) ->
-          env.logger.error "Error getting #{error.options.uri}: #{error.response.statusCode}"
-        .catch (error) ->
-          env.logger.error error
+          env.logger.error "Error getting capabilitites from middleware at #{error.options?.uri}: #{error.response?.statusCode}"
+          return null
+
+      # register device type
+      deviceConfigDef = require("./device-config-schema")
+      @framework.deviceManager.registerDeviceClass("Volkszaehler", {
+        configDef: deviceConfigDef.Volkszaehler,
+        createCallback: (config) =>
+          return new VolkszaehlerDevice(config, this)
+      })
 
       # accept GET and POST
       app.get( '/volkszaehler/:uuid', (req, res) =>
@@ -65,14 +98,6 @@ module.exports = (env) ->
           res.status(400).send 'ERROR'
       )
 
-      # register device type
-      deviceConfigDef = require("./device-config-schema")
-      @framework.deviceManager.registerDeviceClass("Volkszaehler", {
-        configDef: deviceConfigDef.Volkszaehler,
-        createCallback: (config) =>
-          return new VolkszaehlerDevice(config, this)
-      })
-
     # ####registerDevice()
     # `registerDevice` registeres the channel device with the volkszaehler plugin
     # this allows the plugin to update the device when it receives push notifications from
@@ -97,7 +122,6 @@ module.exports = (env) ->
     #  * `value` updated value (float)
     #
     updateRegisteredDevice: (uuid, timestamp, value) =>
-      # console.log "updateRegisteredDevice:", uuid, timestamp, value
       deviceId = @devices[uuid]
       @framework.deviceManager.getDeviceById(deviceId).update(timestamp, value) if deviceId
 
@@ -108,26 +132,30 @@ module.exports = (env) ->
     #  * `type` volkszaehler entity type, e.g. 'power'
     #
     getCapabilitiesByType: (type) =>
-      @_capabilities.then (capabilities) ->
-        result = (entityCaps for entityCaps in capabilities.entities when entityCaps.name is type)
-        assert result.length is 1
-        return Promise.resolve result[0]
+      @_capabilities
+        .then (capabilities) ->
+          result = entityCaps for entityCaps in capabilities.entities when entityCaps.name is type
+          assert result
+          return Promise.resolve result
 
+
+  # ###VolkszaehlerDevice class
+  # encapsulates a volkszahler channel
   class VolkszaehlerDevice extends env.devices.Sensor
     # attributes
     attributes:
       value:
         description: "Channel value"
-        type: "number"
+        type: t.number
 
     # actions
     actions:
       update:
         params:
           timestamp:
-            type: "number"
+            type: t.number
           value:
-            type: "number"
+            type: t.number
         description: "Tuple updated"
 
     _timestamp = null
@@ -151,23 +179,23 @@ module.exports = (env) ->
       @config.xlink = @config.middleware + "/entity/#{@config.uuid}.json"
 
       # get entity definition
-      @_definition = request({ uri: @config.xlink, simple: true, transform: JSON.parse })
-        .then (json) ->
-          entityDef = json?.entity
-          assert entityDef
-          return Promise.resolve entityDef
-        .error (error) ->
-          env.logger.error "Error getting #{error.options.uri}: #{error.response.statusCode}"
-        .catch (error) ->
-          env.logger.error error
+      @_definition = requestWithRetry({ uri: @config.xlink, json: true })
+        .then (json) =>
+          assert json?.entity
+          return json?.entity
+        .error (error) =>
+          env.logger.error "Error getting entity definition from middleware at #{error.options?.uri} for #{@config.uuid}: #{error.response?.statusCode}"
+          return null
 
       # get entity capabilities
-      @_capabilities = @_definition.then (definition) =>
-        return @plugin.getCapabilitiesByType definition.type
+      @_capabilities = @_definition
+        .then (definition) =>
+          return if definition then @plugin.getCapabilitiesByType definition.type else null
 
       # set relevant capabilities
-      @_capabilities.then (capabilities) =>
-        @attributes['value'].unit = capabilities.unit
+      @_capabilities
+        .then (capabilities) =>
+          @attributes['value'].unit = capabilities?.unit
 
       super()
 
@@ -196,7 +224,5 @@ module.exports = (env) ->
       @_setTuple timestamp, value
 
   # ###Finally
-  # Create a instance of my plugin
   volkszaehlerPlugin = new VolkszaehlerPlugin
-  # and return it to the framework.
   return volkszaehlerPlugin
