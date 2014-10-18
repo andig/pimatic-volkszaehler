@@ -68,6 +68,16 @@ module.exports = (env) ->
           env.logger.error "Error getting capabilitites from middleware at #{error.options?.uri}: #{error.response?.statusCode}"
           return null
 
+      @_capabilities
+        .then () =>
+          requestWithRetry({ uri: @config.middleware + '/entity.json', json: true })
+            .then (json) ->
+              assert json?.entities?
+              env.logger.info "Public channel #{entity.uuid} #{entity.title} (#{entity.type})" for entity in json?.entities
+            .error (error) ->
+              env.logger.error "Error getting public channels from middleware at #{error.options?.uri}: #{error.response?.statusCode}"
+              return null
+
       # register device type
       deviceConfigDef = require("./device-config-schema")
       @framework.deviceManager.registerDeviceClass("Volkszaehler", {
