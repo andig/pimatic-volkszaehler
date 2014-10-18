@@ -1,0 +1,6 @@
+deploy: 
+  email: cpuidle@gmx.de
+  provider: npm
+  api_key: 
+    secure: OzlotF7h//th//IvYmGMgEv9qBXce+23ssu1RdzW7n7OPZT+knfzkER3A1CDBKaSdAoJs0VjKRJBP2igP2oDjzuHjdDOso9dGr3asFavQ+UL+w3Iduq7IZCQ0+0d3udNA8MexUkYeHnBjJPP9cvafkGMIBOEbGNTijWhO8DoxMU=
+language: node_js
