@@ -21,6 +21,8 @@ module.exports = (env) ->
     retryDelay || (retryDelay = 1000)
     retry || (retry = 0)
 
+    env.logger.debug "GET #{options.uri||options.url}"
+
     # httpGet returns a promise
     return (request options)
       .error (error) ->
@@ -169,17 +171,19 @@ module.exports = (env) ->
       @name = config.name
       @id = config.id
 
-      # inherit middleware from plugin if not defined
-      @config.middleware = @plugin.config.middleware unless @config.middleware
+      # inherit plugin properties if not defined on device level
+      @middleware = config.middleware or plugin.config.middleware
+      @mode = config.mode or plugin.config.mode
+      @timeout = 1000 * (config.timeout or plugin.config.timeout)
 
       # register device for updates
       @plugin.registerDevice @id, config.uuid
 
       # link to middleware entity definition
-      @config.xlink = @config.middleware + "/entity/#{@config.uuid}.json"
+      @config.xLink = @middleware + "/entity/#{@config.uuid}.json"
 
       # get entity definition
-      @_definition = requestWithRetry({ uri: @config.xlink, json: true })
+      @_definition = requestWithRetry({ uri: @config.xLink, json: true })
         .then (json) =>
           assert json?.entity
           return json?.entity
@@ -197,7 +201,26 @@ module.exports = (env) ->
         .then (capabilities) =>
           @attributes['value'].unit = capabilities?.unit
 
+      # keep updating - pull mode only
+      if @mode is "pull"
+        @requestUpdate()
+        setInterval( =>
+          @requestUpdate()
+        , @timeout
+        )
+
+      # complete constructur
       super()
+
+    # poll device according to timeout
+    requestUpdate: ->
+      requestWithRetry({ uri: @middleware + "/data/#{@config.uuid}.json?from=now", json: true })
+        .then (json) =>
+          assert json?.data?.tuples?
+          [timestamp, value, _] = json?.data?.tuples.pop()
+          @_setTuple timestamp, value
+        .error (error) ->
+          env.logger.error "Error getting capabilitites from middleware at #{error.options?.uri}: #{error.response?.statusCode}"
 
     # ####getTimestamp()
     # Get timestamp of last update in ms
