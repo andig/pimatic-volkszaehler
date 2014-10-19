@@ -12,7 +12,7 @@ module.exports = {
       type: "string"
       enum: ["push", "pull"]
       default: "pull"
-    timeout:
+    interval:
       description: "Polling interval for channel updates in seconds when mode == pull"
       type: "number"
       default: 60

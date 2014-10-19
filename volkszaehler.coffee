@@ -184,7 +184,7 @@ module.exports = (env) ->
       # inherit plugin properties if not defined on device level
       @middleware = config.middleware or plugin.config.middleware
       @mode = config.mode or plugin.config.mode
-      @timeout = 1000 * (config.timeout or plugin.config.timeout)
+      @interval = 1000 * (config.interval or plugin.config.interval)
 
       # register device for updates
       @plugin.registerDevice @id, config.uuid
@@ -216,13 +216,13 @@ module.exports = (env) ->
         @requestUpdate()
         setInterval( =>
           @requestUpdate()
-        , @timeout
+        , @interval
         )
 
       # complete constructur
       super()
 
-    # poll device according to timeout
+    # poll device according to interval
     requestUpdate: ->
       requestWithRetry({ uri: @middleware + "/data/#{@config.uuid}.json?from=now", json: true })
         .then (json) =>
