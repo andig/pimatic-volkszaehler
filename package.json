@@ -1,9 +1,21 @@
 {
   "name": "pimatic-volkszaehler",
   "description": "Volkszaehler plugin",
-  "version": "0.1.2",
-  "author": "Andreas Goetz <cpuidle@gmx.de>",
+  "version": "0.2.0",
+  "author": {
+    "name": "Andreas Goetz",
+    "email": "<cpuidle@gmx.de>",
+    "url": "http://github.com/andig/pimatic-volkszaehler"
+  },
   "homepage": "http://github.com/andig/pimatic-volkszaehler",
+  "keywords": [
+    "pimatic",
+    "SmartMeter",
+    "Monitoring",
+    "Volkszähler",
+    "Volkszaehler",
+    "volkszaehler.org"
+  ],
   "main": "volkszaehler.coffee",
   "configSchema": "volkszaehler-config-schema.coffee",
   "files": [
@@ -17,7 +29,7 @@
     "url": "https://github.com/andig/pimatic-volkszaehler"
   },
   "dependencies": {
-  	"request-promise": ">=0.2.4"
+  	"request-promise": ">=0.3.1"
   },
   "peerDependencies": {
     "pimatic": ">0.8.17"

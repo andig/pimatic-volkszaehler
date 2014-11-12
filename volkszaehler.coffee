@@ -25,7 +25,8 @@ module.exports = (env) ->
 
     # httpGet returns a promise
     return (request options)
-      .error (error) ->
+      .promise() # convert simple request to promise
+      .catch (error) ->
         # fail after maxRetries
         if (++retry > maxRetries)
           env.logger.warn "Failed " + options.uri + " - giving up"
@@ -177,7 +178,6 @@ module.exports = (env) ->
     # Initialize device by reading entity definition from middleware
     #
     constructor: (@config, @plugin) ->
-      # console.log "VolkszaehlerDevice"
       @name = config.name
       @id = config.id
 
