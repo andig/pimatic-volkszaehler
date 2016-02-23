@@ -1,7 +1,7 @@
 pimatic volkszaehler plugin
 ===========================
 
-Volkszaehler plugin enables connecting the [volkszahler.org](http://volkszahler.org) smart meter application to [pimatic](http://pimatic.org) automation server.
+Volkszaehler plugin enables connecting the [volkszaehler.org](http://volkszaehler.org) smart meter application to [pimatic](http://pimatic.org) automation server.
 
 Plugin Configuration
 -------------
