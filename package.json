@@ -32,7 +32,7 @@
   	"request-promise": ">=0.3.1"
   },
   "peerDependencies": {
-    "pimatic": ">0.8.17"
+    "pimatic": ">0.8.17 <1.0.0"
   },
   "engines": {
     "node": ">0.8.x",
