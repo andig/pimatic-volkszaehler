@@ -178,16 +178,16 @@ module.exports = (env) ->
     # Initialize device by reading entity definition from middleware
     #
     constructor: (@config, @plugin) ->
-      @name = config.name
-      @id = config.id
+      @name = @config.name
+      @id = @config.id
 
       # inherit plugin properties if not defined on device level
-      @middleware = config.middleware or plugin.config.middleware
-      @mode = config.mode or plugin.config.mode
-      @interval = 1000 * (config.interval or plugin.config.interval)
+      @middleware = @config.middleware or @plugin.config.middleware
+      @mode = @config.mode or @plugin.config.mode
+      @interval = 1000 * (@config.interval or @plugin.config.interval)
 
       # register device for updates
-      @plugin.registerDevice @id, config.uuid
+      @plugin.registerDevice @id, @config.uuid
 
       # link to middleware entity definition
       @config.xLink = @middleware + "/entity/#{@config.uuid}.json"
