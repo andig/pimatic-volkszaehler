@@ -7,6 +7,7 @@
     "email": "<cpuidle@gmx.de>",
     "url": "http://github.com/andig/pimatic-volkszaehler"
   },
+  "license": "GPL-2.0",
   "homepage": "http://github.com/andig/pimatic-volkszaehler",
   "keywords": [
     "pimatic",
@@ -21,6 +22,7 @@
   "files": [
     "volkszaehler.coffee",
     "README.md",
+    "LICENSE",
     "device-config-schema.coffee",
     "volkszaehler-config-schema.coffee"
   ],
@@ -32,7 +34,7 @@
   	"request-promise": ">=0.3.1"
   },
   "peerDependencies": {
-    "pimatic": ">0.8.17"
+    "pimatic": ">0.8.17 <1.0.0"
   },
   "engines": {
     "node": ">0.8.x",
