@@ -112,7 +112,7 @@ module.exports = (env) ->
       )
 
     # ####registerDevice()
-    # `registerDevice` registeres the channel device with the volkszaehler plugin
+    # `registerDevice` registers the channel device with the volkszaehler plugin
     # this allows the plugin to update the device when it receives push notifications from
     # volkszaehler middleware
     #
@@ -122,8 +122,19 @@ module.exports = (env) ->
     #
     registerDevice: (id, uuid) =>
       if @devices[uuid]?
-        throw new assert.AssertionError("duplicate channel uuid \"#{uuid}\"")
+        env.logger.error "duplicate channel uuid \"#{uuid}\""
+        assert @devices[uuid] == null
       @devices[uuid] = id
+
+    # ####deregisterDevice()
+    # `deregisterDevice` deregisters the channel device from the volkszaehler plugin
+    # when the device is being destroyed
+    #
+    # #####params:
+    #  * `uuid` volkszaehler channel id
+    #
+    deregisterDevice: (uuid) =>
+      delete @devices[uuid] if @devices[uuid]?
 
     # ####updateRegisteredDevice()
     # `updateRegisteredDevice` updates the device when push notifications are received from the
@@ -214,12 +225,17 @@ module.exports = (env) ->
       # keep updating - pull mode only
       if @mode is "pull"
         @requestUpdate()
-        setInterval( =>
+        @intervalTimerId = setInterval( =>
           @requestUpdate()
         , @interval
         )
 
       # complete constructur
+      super()
+
+    destroy: () ->
+      clearInterval @intervalTimerId if @intervalTimerId?
+      @plugin.deregisterDevice @config.uuid
       super()
 
     # poll device according to interval
